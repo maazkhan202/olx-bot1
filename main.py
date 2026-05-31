@@ -34,14 +34,19 @@ def check_olx():
         if not title or not link:
             continue
 
-        title_up = title.upper()
+        t = title.upper()
 
-        # ✅ ONLY REAL AC ADS
-        if not any(k in title_up for k in ["AIR CONDITIONER", "AC", "SPLIT AC"]):
+        # ✅ MUST contain strong AC intent
+        if "AIR CONDITIONER" not in t and "SPLIT AC" not in t:
             continue
 
-        # ❌ BLOCK FAKE / ACCESSORIES ADS
-        if any(b in title_up for b in ["ACCESSORY", "MOBILE", "PHONE", "COVER", "HOLDER"]):
+        # ❌ STRICT BLOCK (important)
+        bad = [
+            "ACCESSORY", "REMOTE", "COVER", "HOLDER",
+            "MOBILE", "PHONE", "CAR", "PARTS"
+        ]
+
+        if any(b in t for b in bad):
             continue
 
         full_link = "https://www.olx.com.pk" + link
@@ -61,7 +66,7 @@ def check_olx():
                 image = img_tag.get("src")
 
         caption = f"""
-🔥 Lahore AC Deal Found!
+🔥 REAL AC FOUND (Lahore)
 
 📌 {title}
 
