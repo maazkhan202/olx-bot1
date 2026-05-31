@@ -6,6 +6,10 @@ import os
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
+def send_msg(text):
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    requests.post(url, data={"chat_id": CHAT_ID, "text": text})
+
 def send_photo(photo, caption):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto"
     requests.post(url, data={
@@ -15,7 +19,7 @@ def send_photo(photo, caption):
     })
 
 def check_olx():
-    url = "https://www.olx.com.pk/items/q-ac/lahore?filter=price_to_40000"
+    url = "https://www.olx.com.pk/items/q-air-conditioner/lahore?filter=price_to_40000"
     headers = {"User-Agent": "Mozilla/5.0"}
 
     r = requests.get(url, headers=headers)
@@ -27,54 +31,51 @@ def check_olx():
         title = item.text.strip()
         link = item.get("href")
 
-        if title and "AC" in title.upper():
+        if not title or not link:
+            continue
 
-            full_link = "https://www.olx.com.pk" + link
+        title_up = title.upper()
 
-            parent = item.find_parent()
+        # ✅ ONLY REAL AC ADS
+        if not any(k in title_up for k in ["AIR CONDITIONER", "AC", "SPLIT AC"]):
+            continue
 
-            price = ""
-            description = ""
-            image = ""
+        # ❌ BLOCK FAKE / ACCESSORIES ADS
+        if any(b in title_up for b in ["ACCESSORY", "MOBILE", "PHONE", "COVER", "HOLDER"]):
+            continue
 
-            if parent:
-                # price try
-                price_tag = parent.find(text=lambda x: x and "Rs" in x)
-                if price_tag:
-                    price = price_tag.strip()
+        full_link = "https://www.olx.com.pk" + link
 
-                # image try
-                img_tag = parent.find("img")
-                if img_tag and img_tag.get("src"):
-                    image = img_tag.get("src")
+        parent = item.find_parent()
 
-                # description try
-                desc_tag = parent.find("span")
-                if desc_tag:
-                    description = desc_tag.text.strip()
+        price = ""
+        image = ""
 
-            caption = f"""
+        if parent:
+            price_tag = parent.find(text=lambda x: x and "Rs" in x)
+            if price_tag:
+                price = price_tag.strip()
+
+            img_tag = parent.find("img")
+            if img_tag and img_tag.get("src"):
+                image = img_tag.get("src")
+
+        caption = f"""
 🔥 Lahore AC Deal Found!
 
 📌 {title}
 
 💰 {price}
 
-📝 {description}
-
-🔗 Open: {full_link}
+🔗 {full_link}
 """
 
-            if image:
-                send_photo(image, caption)
-            else:
-                # fallback text message
-                requests.post(
-                    f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-                    data={"chat_id": CHAT_ID, "text": caption}
-                )
+        if image:
+            send_photo(image, caption)
+        else:
+            send_msg(caption)
 
-            break
+        break
 
 while True:
     check_olx()
