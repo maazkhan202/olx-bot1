@@ -11,7 +11,7 @@ def send_msg(text):
     requests.post(url, data={"chat_id": CHAT_ID, "text": text})
 
 def check_olx():
-    url = "https://www.olx.com.pk/items/q-ac?filter=price_to_40000"
+    url = "https://www.olx.com.pk/items/q-ac/lahore?filter=price_to_40000"
     headers = {"User-Agent": "Mozilla/5.0"}
 
     r = requests.get(url, headers=headers)
@@ -24,8 +24,36 @@ def check_olx():
         link = item.get("href")
 
         if title and "AC" in title.upper():
+
             full_link = "https://www.olx.com.pk" + link
-            msg = f"🔔 New AC Found!\n\n{title}\n{full_link}"
+
+            # try to get more info from parent block
+            parent = item.find_parent()
+
+            description = ""
+            price = ""
+
+            if parent:
+                desc_tag = parent.find("span")
+                if desc_tag:
+                    description = desc_tag.text.strip()
+
+                price_tag = parent.find(text=lambda x: x and "Rs" in x)
+                if price_tag:
+                    price = price_tag.strip()
+
+            msg = f"""
+🔔 Lahore AC Found!
+
+📌 Title: {title}
+
+💰 Price: {price}
+
+📝 Description: {description}
+
+🔗 Link: {full_link}
+"""
+
             send_msg(msg)
             break
 
