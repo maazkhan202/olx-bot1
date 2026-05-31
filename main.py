@@ -1,4 +1,5 @@
 import requests
+from bs4 import BeautifulSoup
 import time
 import os
 
@@ -14,9 +15,19 @@ def check_olx():
     headers = {"User-Agent": "Mozilla/5.0"}
 
     r = requests.get(url, headers=headers)
+    soup = BeautifulSoup(r.text, "html.parser")
 
-    if "AC" in r.text.upper():
-        send_msg("🔔 New AC found under 40k!")
+    items = soup.find_all("a")
+
+    for item in items:
+        title = item.text.strip()
+        link = item.get("href")
+
+        if title and "AC" in title.upper():
+            full_link = "https://www.olx.com.pk" + link
+            msg = f"🔔 New AC Found!\n\n{title}\n{full_link}"
+            send_msg(msg)
+            break
 
 while True:
     check_olx()
